@@ -32,6 +32,20 @@ class OpenStreetMapSearchAndPick extends StatefulWidget {
   @override
   State<OpenStreetMapSearchAndPick> createState() =>
       _OpenStreetMapSearchAndPickState();
+
+  static Future<PickedData> pickData(LatLng latLog) async {
+    LatLng center = LatLng(latLog.latitude, latLog.longitude);
+
+    var client = http.Client();
+    String url =
+        'https://nominatim.openstreetmap.org/reverse?format=json&lat=${center.latitude}&lon=${center.longitude}&zoom=18&addressdetails=1';
+
+    var response = await client.post(Uri.parse(url));
+    var decodedResponse =
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<dynamic, dynamic>;
+    String displayName = decodedResponse['display_name'];
+    return PickedData(center, displayName);
+  }
 }
 
 class _OpenStreetMapSearchAndPickState
@@ -322,7 +336,7 @@ class _OpenStreetMapSearchAndPickState
                             widget.buttonText,
                             onPressed: () async {
                               widget.onPicked?.call(
-                                  context, _mapController.center, pickData);
+                                  context, _mapController.center, OpenStreetMapSearchAndPick.pickData);
                             },
                             backgroundcolor: widget.buttonColor,
                           ),
@@ -337,20 +351,6 @@ class _OpenStreetMapSearchAndPickState
         ],
       ),
     );
-  }
-
-  static Future<PickedData> pickData(LatLng latLog) async {
-    LatLng center = LatLng(latLog.latitude, latLog.longitude);
-
-    var client = http.Client();
-    String url =
-        'https://nominatim.openstreetmap.org/reverse?format=json&lat=${center.latitude}&lon=${center.longitude}&zoom=18&addressdetails=1';
-
-    var response = await client.post(Uri.parse(url));
-    var decodedResponse =
-        jsonDecode(utf8.decode(response.bodyBytes)) as Map<dynamic, dynamic>;
-    String displayName = decodedResponse['display_name'];
-    return PickedData(center, displayName);
   }
 }
 
