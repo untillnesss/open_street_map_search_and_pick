@@ -15,7 +15,8 @@ class OpenStreetMapSearchAndPick extends StatefulWidget {
   final String buttonText;
   final Future<LatLng> Function(BuildContext context)? onCurrentLocationTap;
   final ThemeData? textFieldThemeData, listTileThemeData;
-  final Function(BuildContext, Future<PickedData> Function())? onPicked;
+  final Function(BuildContext, LatLng, Future<PickedData> Function(LatLng))?
+      onPicked;
 
   const OpenStreetMapSearchAndPick({
     Key? key,
@@ -320,7 +321,8 @@ class _OpenStreetMapSearchAndPickState
                           WideButton(
                             widget.buttonText,
                             onPressed: () async {
-                              widget.onPicked?.call(context, pickData);
+                              widget.onPicked?.call(
+                                  context, _mapController.center, pickData);
                             },
                             backgroundcolor: widget.buttonColor,
                           ),
@@ -337,12 +339,12 @@ class _OpenStreetMapSearchAndPickState
     );
   }
 
-  Future<PickedData> pickData() async {
-    LatLng center =
-        LatLng(_mapController.center.latitude, _mapController.center.longitude);
+  static Future<PickedData> pickData(LatLng latLog) async {
+    LatLng center = LatLng(latLog.latitude, latLog.longitude);
+
     var client = http.Client();
     String url =
-        'https://nominatim.openstreetmap.org/reverse?format=json&lat=${_mapController.center.latitude}&lon=${_mapController.center.longitude}&zoom=18&addressdetails=1';
+        'https://nominatim.openstreetmap.org/reverse?format=json&lat=${center.latitude}&lon=${center.longitude}&zoom=18&addressdetails=1';
 
     var response = await client.post(Uri.parse(url));
     var decodedResponse =

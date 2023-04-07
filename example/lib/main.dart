@@ -73,7 +73,7 @@ class _MyHomePageState extends State<MyHomePage> {
         onCurrentLocationTap: (context) async {
           return LatLng(-7.2363011, 112.7509539);
         },
-        onPicked: (context, doPick) async {
+        onPicked: (context, center, doPick) async {
           showDialog(
             context: context,
             builder: (context) {
@@ -83,7 +83,7 @@ class _MyHomePageState extends State<MyHomePage> {
             },
           );
 
-          PickedData pickedData = await doPick();
+          PickedData pickedData = await doPick(center);
 
           Navigator.pop(context);
 
