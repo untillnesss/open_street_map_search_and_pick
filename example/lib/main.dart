@@ -1,4 +1,6 @@
-import 'package:flutter/foundation.dart';
+import 'dart:developer';
+
+import 'package:example/pick.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:open_street_map_search_and_pick/open_street_map_search_and_pick.dart';
@@ -66,33 +68,36 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: OpenStreetMapSearchAndPick(
-        center: LatLng(23, 89),
-        buttonColor: Colors.blue,
-        buttonText: 'Set Current Location',
-        onCurrentLocationTap: (context) async {
-          return LatLng(-7.2363011, 112.7509539);
-        },
-        onPicked: (context, center, doPick) async {
-          showDialog(
-            context: context,
-            builder: (context) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            },
-          );
+      body: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: () async {
+                  PickedData result = await OpenStreetMapSearchAndPick.pickData(
+                      LatLng(-6.1753871, 106.8249641));
 
-          PickedData pickedData = await doPick(center);
-
-          Navigator.pop(context);
-
-          if (kDebugMode) {
-            print(pickedData.latLong.latitude);
-            print(pickedData.latLong.longitude);
-            print(pickedData.address);
-          }
-        },
+                  inspect(result);
+                },
+                child: const Text('Get Address'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const PickView(),
+                    ),
+                  );
+                },
+                child: const Text('To Pick Map'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
