@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map/plugin_api.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
+import 'package:open_street_map_search_and_pick/services/http/http_service.dart';
 import 'package:open_street_map_search_and_pick/widgets/wide_button.dart';
 
 class OpenStreetMapSearchAndPick extends StatefulWidget {
@@ -36,14 +38,15 @@ class OpenStreetMapSearchAndPick extends StatefulWidget {
   static Future<PickedData> pickData(LatLng latLog) async {
     LatLng center = LatLng(latLog.latitude, latLog.longitude);
 
-    var client = http.Client();
+    var client = ClientWithUserAgent(http.Client());
     String url =
         'https://nominatim.openstreetmap.org/reverse?format=json&lat=${center.latitude}&lon=${center.longitude}&zoom=18&addressdetails=1';
 
-    var response = await client.post(Uri.parse(url));
+    var response = await client.get(Uri.parse(url));
     var decodedResponse =
         jsonDecode(utf8.decode(response.bodyBytes)) as Map<dynamic, dynamic>;
-    String displayName = decodedResponse['display_name'];
+    log(decodedResponse.toString());
+    String displayName = decodedResponse['display_name'] ?? '';
     return PickedData(center, displayName);
   }
 }
@@ -56,7 +59,7 @@ class _OpenStreetMapSearchAndPickState
   final FocusNode _focusNode = FocusNode();
   List<OSMdata> _options = <OSMdata>[];
   Timer? _debounce;
-  var client = http.Client();
+  var client = ClientWithUserAgent(http.Client());
   bool isLoadingAddress = true;
 
   void setNameCurrentPos() async {
@@ -97,7 +100,7 @@ class _OpenStreetMapSearchAndPickState
     String url =
         'https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&zoom=18&addressdetails=1';
 
-    var response = await client.post(Uri.parse(url));
+    var response = await client.get(Uri.parse(url));
     var decodedResponse =
         jsonDecode(utf8.decode(response.bodyBytes)) as Map<dynamic, dynamic>;
 
@@ -122,11 +125,11 @@ class _OpenStreetMapSearchAndPickState
       if (event is MapEventMoveEnd) {
         isLoadingAddress = true;
         setState(() {});
-        var client = http.Client();
+        var client = ClientWithUserAgent(http.Client());
         String url =
             'https://nominatim.openstreetmap.org/reverse?format=json&lat=${event.center.latitude}&lon=${event.center.longitude}&zoom=18&addressdetails=1';
 
-        var response = await client.post(Uri.parse(url));
+        var response = await client.get(Uri.parse(url));
         var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes))
             as Map<dynamic, dynamic>;
 
@@ -216,14 +219,14 @@ class _OpenStreetMapSearchAndPickState
                           if (kDebugMode) {
                             print(value);
                           }
-                          var client = http.Client();
+                          var client = ClientWithUserAgent(http.Client());
                           try {
                             String url =
                                 'https://nominatim.openstreetmap.org/search?q=$value&format=json&polygon_geojson=1&addressdetails=1';
                             if (kDebugMode) {
                               print(url);
                             }
-                            var response = await client.post(Uri.parse(url));
+                            var response = await client.get(Uri.parse(url));
                             var decodedResponse =
                                 jsonDecode(utf8.decode(response.bodyBytes))
                                     as List<dynamic>;
@@ -336,7 +339,9 @@ class _OpenStreetMapSearchAndPickState
                             widget.buttonText,
                             onPressed: () async {
                               widget.onPicked?.call(
-                                  context, _mapController.center, OpenStreetMapSearchAndPick.pickData);
+                                  context,
+                                  _mapController.center,
+                                  OpenStreetMapSearchAndPick.pickData);
                             },
                             backgroundcolor: widget.buttonColor,
                           ),
