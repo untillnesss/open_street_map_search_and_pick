@@ -15,11 +15,11 @@ class PickView extends StatelessWidget {
         title: const Text('Pick Map'),
       ),
       body: OpenStreetMapSearchAndPick(
-        center: LatLng(23, 89),
+        center: const LatLng(23, 89),
         buttonColor: Colors.blue,
         buttonText: 'Set Current Location',
         onCurrentLocationTap: (context) async {
-          return LatLng(-7.2363011, 112.7509539);
+          return const LatLng(-7.2363011, 112.7509539);
         },
         onPicked: (context, center, doPick) async {
           showDialog(
@@ -33,6 +33,7 @@ class PickView extends StatelessWidget {
 
           PickedData pickedData = await doPick(center);
 
+          // ignore: use_build_context_synchronously
           Navigator.pop(context);
 
           if (kDebugMode) {

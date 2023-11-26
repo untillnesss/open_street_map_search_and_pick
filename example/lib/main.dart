@@ -29,6 +29,7 @@ class MyApp extends StatelessWidget {
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
         primarySwatch: Colors.blue,
+        useMaterial3: false,
       ),
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
@@ -79,7 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ElevatedButton(
                 onPressed: () async {
                   PickedData result = await OpenStreetMapSearchAndPick.pickData(
-                      LatLng(-6.1753871, 106.8249641));
+                      const LatLng(-6.1753871, 106.8249641));
 
                   inspect(result);
                 },
