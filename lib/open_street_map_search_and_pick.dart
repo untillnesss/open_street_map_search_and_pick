@@ -356,6 +356,7 @@ class _OpenStreetMapSearchAndPickState
                                         .titleMedium
                                         ?.copyWith(
                                           fontWeight: FontWeight.bold,
+                                          color: Colors.black,
                                         ),
                                   ),
                                   Row(
@@ -380,6 +381,7 @@ class _OpenStreetMapSearchAndPickState
                                             .titleMedium
                                             ?.copyWith(
                                               fontWeight: FontWeight.bold,
+                                              color: Colors.black,
                                             ),
                                       ),
                                     ],
