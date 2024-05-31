@@ -17,8 +17,13 @@ class OpenStreetMapSearchAndPick extends StatefulWidget {
   final String buttonText;
   final Future<LatLng> Function(BuildContext context)? onCurrentLocationTap;
   final ThemeData? textFieldThemeData, listTileThemeData;
-  final Function(BuildContext, LatLng, Future<PickedData> Function(LatLng))?
-      onPicked;
+  final Function(
+    BuildContext,
+    LatLng,
+    Future<PickedData> Function(LatLng, int),
+    int,
+  )? onPicked;
+  final bool showRadius;
 
   const OpenStreetMapSearchAndPick({
     Key? key,
@@ -29,13 +34,14 @@ class OpenStreetMapSearchAndPick extends StatefulWidget {
     this.onCurrentLocationTap,
     this.textFieldThemeData,
     this.listTileThemeData,
+    this.showRadius = false,
   }) : super(key: key);
 
   @override
   State<OpenStreetMapSearchAndPick> createState() =>
       _OpenStreetMapSearchAndPickState();
 
-  static Future<PickedData> pickData(LatLng latLog) async {
+  static Future<PickedData> pickData(LatLng latLog, int radius) async {
     LatLng center = LatLng(latLog.latitude, latLog.longitude);
 
     var client = ClientWithUserAgent(http.Client());
@@ -47,7 +53,7 @@ class OpenStreetMapSearchAndPick extends StatefulWidget {
         jsonDecode(utf8.decode(response.bodyBytes)) as Map<dynamic, dynamic>;
     log(decodedResponse.toString());
     String displayName = decodedResponse['display_name'] ?? '';
-    return PickedData(center, displayName);
+    return PickedData(center, displayName, radius);
   }
 }
 
@@ -61,6 +67,7 @@ class _OpenStreetMapSearchAndPickState
   Timer? _debounce;
   var client = ClientWithUserAgent(http.Client());
   bool isLoadingAddress = true;
+  int valueSlider = 10;
 
   void setNameCurrentPos() async {
     double latitude = _mapController.center.latitude;
@@ -335,13 +342,61 @@ class _OpenStreetMapSearchAndPickState
                               child: const LinearProgressIndicator(),
                             ),
                           ),
+                          Visibility(
+                            visible: widget.showRadius,
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Radius',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Slider.adaptive(
+                                          max: 110,
+                                          min: 10,
+                                          divisions: 20,
+                                          value: valueSlider.toDouble(),
+                                          label: valueSlider.toString(),
+                                          onChanged: (value) {
+                                            valueSlider = value.round();
+                                            setState(() {});
+                                          },
+                                        ),
+                                      ),
+                                      Text(
+                                        '$valueSlider KM',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                           WideButton(
                             widget.buttonText,
                             onPressed: () async {
                               widget.onPicked?.call(
-                                  context,
-                                  _mapController.center,
-                                  OpenStreetMapSearchAndPick.pickData);
+                                context,
+                                _mapController.center,
+                                OpenStreetMapSearchAndPick.pickData,
+                                valueSlider,
+                              );
                             },
                             backgroundcolor: widget.buttonColor,
                           ),
@@ -384,6 +439,11 @@ class OSMdata {
 class PickedData {
   final LatLng latLong;
   final String address;
+  final int radius;
 
-  PickedData(this.latLong, this.address);
+  PickedData(
+    this.latLong,
+    this.address,
+    this.radius,
+  );
 }

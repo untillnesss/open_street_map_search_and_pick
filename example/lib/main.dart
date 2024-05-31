@@ -79,7 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ElevatedButton(
                 onPressed: () async {
                   PickedData result = await OpenStreetMapSearchAndPick.pickData(
-                      LatLng(-6.1753871, 106.8249641));
+                      LatLng(-6.1753871, 106.8249641), 10);
 
                   inspect(result);
                 },

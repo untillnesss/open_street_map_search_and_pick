@@ -15,13 +15,14 @@ class PickView extends StatelessWidget {
         title: const Text('Pick Map'),
       ),
       body: OpenStreetMapSearchAndPick(
+        showRadius: true,
         center: LatLng(23, 89),
         buttonColor: Colors.blue,
         buttonText: 'Set Current Location',
         onCurrentLocationTap: (context) async {
           return LatLng(-7.2363011, 112.7509539);
         },
-        onPicked: (context, center, doPick) async {
+        onPicked: (context, center, doPick, radius) async {
           showDialog(
             context: context,
             builder: (context) {
@@ -31,7 +32,7 @@ class PickView extends StatelessWidget {
             },
           );
 
-          PickedData pickedData = await doPick(center);
+          PickedData pickedData = await doPick(center, radius);
 
           Navigator.pop(context);
 
@@ -39,6 +40,7 @@ class PickView extends StatelessWidget {
             print(pickedData.latLong.latitude);
             print(pickedData.latLong.longitude);
             print(pickedData.address);
+            print(pickedData.radius);
           }
         },
       ),
