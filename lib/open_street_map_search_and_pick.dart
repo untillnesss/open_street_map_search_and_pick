@@ -138,7 +138,7 @@ class _OpenStreetMapSearchAndPickState
         var response = await client.get(Uri.parse(url));
         var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes))
             as Map<dynamic, dynamic>;
-        print(decodedResponse);
+
         // _searchController.text = decodedResponse['display_name'] ?? '';
         focusingLocation = decodedResponse['display_name'] ?? '';
         isLoadingAddress = false;
@@ -394,7 +394,7 @@ class _OpenStreetMapSearchAndPickState
                             onPressed: () async {
                               widget.onPicked?.call(
                                 context,
-                                _mapController.center,
+                                _mapController.camera.center,
                                 OpenStreetMapSearchAndPick.pickData,
                                 valueSlider,
                               );
@@ -414,7 +414,7 @@ class _OpenStreetMapSearchAndPickState
     );
   }
 
-  Future<PickedData> pickData() async {
+  Future<PickedData> pickData(int radius) async {
     LatLng center = LatLng(_mapController.camera.center.latitude,
         _mapController.camera.center.longitude);
     var client = http.Client();
@@ -425,7 +425,7 @@ class _OpenStreetMapSearchAndPickState
     var decodedResponse =
         jsonDecode(utf8.decode(response.bodyBytes)) as Map<dynamic, dynamic>;
     String displayName = decodedResponse['display_name'];
-    return PickedData(center, displayName);
+    return PickedData(center, displayName, radius);
   }
 }
 
