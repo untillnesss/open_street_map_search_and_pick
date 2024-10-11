@@ -55,7 +55,7 @@ class _OpenStreetMapSearchAndPickState
     String url =
         'https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&zoom=18&addressdetails=1';
 
-    var response = await client.post(Uri.parse(url));
+    var response = await client.get(Uri.parse(url));
     var decodedResponse =
         jsonDecode(utf8.decode(response.bodyBytes)) as Map<dynamic, dynamic>;
 
@@ -81,7 +81,7 @@ class _OpenStreetMapSearchAndPickState
     String url =
         'https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&zoom=18&addressdetails=1';
 
-    var response = await client.post(Uri.parse(url));
+    var response = await client.get(Uri.parse(url));
     var decodedResponse =
         jsonDecode(utf8.decode(response.bodyBytes)) as Map<dynamic, dynamic>;
 
@@ -110,10 +110,10 @@ class _OpenStreetMapSearchAndPickState
         String url =
             'https://nominatim.openstreetmap.org/reverse?format=json&lat=${event.camera.center.latitude}&lon=${event.camera.center.longitude}&zoom=18&addressdetails=1';
 
-        var response = await client.post(Uri.parse(url));
+        var response = await client.get(Uri.parse(url));
         var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes))
             as Map<dynamic, dynamic>;
-
+        print(decodedResponse);
         // _searchController.text = decodedResponse['display_name'] ?? '';
         focusingLocation = decodedResponse['display_name'] ?? '';
         isLoadingAddress = false;
@@ -146,7 +146,8 @@ class _OpenStreetMapSearchAndPickState
           Positioned.fill(
             child: FlutterMap(
               options: MapOptions(
-                initialCenter: LatLng(widget.center.latitude, widget.center.longitude),
+                initialCenter:
+                    LatLng(widget.center.latitude, widget.center.longitude),
                 initialZoom: 15.0,
                 maxZoom: 18,
                 minZoom: 6,
@@ -154,8 +155,7 @@ class _OpenStreetMapSearchAndPickState
               mapController: _mapController,
               children: [
                 TileLayer(
-                  urlTemplate:
-                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   subdomains: ['a', 'b', 'c'],
                   userAgentPackageName: 'dev.fleaflet.flutter_map.example',
                 ),
@@ -207,7 +207,7 @@ class _OpenStreetMapSearchAndPickState
                             if (kDebugMode) {
                               print(url);
                             }
-                            var response = await client.post(Uri.parse(url));
+                            var response = await client.get(Uri.parse(url));
                             var decodedResponse =
                                 jsonDecode(utf8.decode(response.bodyBytes))
                                     as List<dynamic>;
@@ -337,13 +337,13 @@ class _OpenStreetMapSearchAndPickState
   }
 
   Future<PickedData> pickData() async {
-    LatLng center =
-        LatLng(_mapController.camera.center.latitude, _mapController.camera.center.longitude);
+    LatLng center = LatLng(_mapController.camera.center.latitude,
+        _mapController.camera.center.longitude);
     var client = http.Client();
     String url =
         'https://nominatim.openstreetmap.org/reverse?format=json&lat=${_mapController.camera.center.latitude}&lon=${_mapController.camera.center.longitude}&zoom=18&addressdetails=1';
 
-    var response = await client.post(Uri.parse(url));
+    var response = await client.get(Uri.parse(url));
     var decodedResponse =
         jsonDecode(utf8.decode(response.bodyBytes)) as Map<dynamic, dynamic>;
     String displayName = decodedResponse['display_name'];
