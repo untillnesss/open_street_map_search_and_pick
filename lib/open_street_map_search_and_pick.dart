@@ -10,21 +10,16 @@ import 'package:open_street_map_search_and_pick/widgets/wide_button.dart';
 class OpenStreetMapSearchAndPick extends StatefulWidget {
   final LatLng center;
   // final void Function(PickedData pickedData) onPicked;
-  final Color buttonColor;
   final String buttonText;
   final Future<LatLng> Function(BuildContext context)? onCurrentLocationTap;
-  final ThemeData? textFieldThemeData, listTileThemeData;
   final Function(BuildContext, Future<PickedData> Function())? onPicked;
 
   const OpenStreetMapSearchAndPick({
     Key? key,
     required this.center,
     required this.onPicked,
-    this.buttonColor = Colors.blue,
     this.buttonText = 'Set Current Location',
     this.onCurrentLocationTap,
-    this.textFieldThemeData,
-    this.listTileThemeData,
   }) : super(key: key);
 
   @override
@@ -113,7 +108,7 @@ class _OpenStreetMapSearchAndPickState
         var response = await client.get(Uri.parse(url));
         var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes))
             as Map<dynamic, dynamic>;
-        print(decodedResponse);
+        debugPrint(decodedResponse.toString());
         // _searchController.text = decodedResponse['display_name'] ?? '';
         focusingLocation = decodedResponse['display_name'] ?? '';
         isLoadingAddress = false;
@@ -132,13 +127,6 @@ class _OpenStreetMapSearchAndPickState
 
   @override
   Widget build(BuildContext context) {
-    OutlineInputBorder inputBorder = OutlineInputBorder(
-      borderSide: BorderSide(color: widget.buttonColor),
-    );
-    OutlineInputBorder inputFocusBorder = OutlineInputBorder(
-      borderSide: BorderSide(color: widget.buttonColor, width: 3.0),
-    );
-
     // String? _autocompleteSelection;
     return SafeArea(
       child: Stack(
@@ -165,8 +153,10 @@ class _OpenStreetMapSearchAndPickState
           Positioned.fill(
             child: IgnorePointer(
               child: Center(
-                child: Icon(Icons.location_pin,
-                    size: 50, color: widget.buttonColor),
+                child: Icon(
+                  Icons.location_pin,
+                  size: 50,
+                ),
               ),
             ),
           ),
@@ -182,53 +172,48 @@ class _OpenStreetMapSearchAndPickState
               ),
               child: Column(
                 children: [
-                  Theme(
-                    data: widget.textFieldThemeData ?? ThemeData(),
-                    child: TextFormField(
-                      controller: _searchController,
-                      focusNode: _focusNode,
-                      decoration: InputDecoration(
-                        hintText: 'Search Location',
-                        border: inputBorder,
-                        focusedBorder: inputFocusBorder,
-                      ),
-                      onChanged: (String value) {
-                        if (_debounce?.isActive ?? false) _debounce?.cancel();
-
-                        _debounce =
-                            Timer(const Duration(milliseconds: 2000), () async {
-                          if (kDebugMode) {
-                            print(value);
-                          }
-                          var client = http.Client();
-                          try {
-                            String url =
-                                'https://nominatim.openstreetmap.org/search?q=$value&format=json&polygon_geojson=1&addressdetails=1';
-                            if (kDebugMode) {
-                              print(url);
-                            }
-                            var response = await client.get(Uri.parse(url));
-                            var decodedResponse =
-                                jsonDecode(utf8.decode(response.bodyBytes))
-                                    as List<dynamic>;
-                            if (kDebugMode) {
-                              print(decodedResponse);
-                            }
-                            _options = decodedResponse
-                                .map((e) => OSMdata(
-                                    displayname: e['display_name'],
-                                    lat: double.parse(e['lat']),
-                                    lon: double.parse(e['lon'])))
-                                .toList();
-                            setState(() {});
-                          } finally {
-                            client.close();
-                          }
-
-                          setState(() {});
-                        });
-                      },
+                  TextFormField(
+                    controller: _searchController,
+                    focusNode: _focusNode,
+                    decoration: InputDecoration(
+                      hintText: 'Search Location',
                     ),
+                    onChanged: (String value) {
+                      if (_debounce?.isActive ?? false) _debounce?.cancel();
+
+                      _debounce =
+                          Timer(const Duration(milliseconds: 2000), () async {
+                        if (kDebugMode) {
+                          print(value);
+                        }
+                        var client = http.Client();
+                        try {
+                          String url =
+                              'https://nominatim.openstreetmap.org/search?q=$value&format=json&polygon_geojson=1&addressdetails=1';
+                          if (kDebugMode) {
+                            print(url);
+                          }
+                          var response = await client.get(Uri.parse(url));
+                          var decodedResponse =
+                              jsonDecode(utf8.decode(response.bodyBytes))
+                                  as List<dynamic>;
+                          if (kDebugMode) {
+                            print(decodedResponse);
+                          }
+                          _options = decodedResponse
+                              .map((e) => OSMdata(
+                                  displayname: e['display_name'],
+                                  lat: double.parse(e['lat']),
+                                  lon: double.parse(e['lon'])))
+                              .toList();
+                          setState(() {});
+                        } finally {
+                          client.close();
+                        }
+
+                        setState(() {});
+                      });
+                    },
                   ),
                   StatefulBuilder(
                     builder: (context, setState) {
@@ -237,24 +222,21 @@ class _OpenStreetMapSearchAndPickState
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: _options.length > 5 ? 5 : _options.length,
                         itemBuilder: (context, index) {
-                          return Theme(
-                            data: widget.listTileThemeData ?? ThemeData(),
-                            child: ListTile(
-                              title: Text(_options[index].displayname),
-                              subtitle: Text(
-                                  '${_options[index].lat},${_options[index].lon}'),
-                              onTap: () {
-                                _mapController.move(
-                                    LatLng(_options[index].lat,
-                                        _options[index].lon),
-                                    15.0);
+                          return ListTile(
+                            title: Text(_options[index].displayname),
+                            subtitle: Text(
+                                '${_options[index].lat},${_options[index].lon}'),
+                            onTap: () {
+                              _mapController.move(
+                                  LatLng(
+                                      _options[index].lat, _options[index].lon),
+                                  15.0);
 
-                                setNameCurrentPos();
-                                _focusNode.unfocus();
-                                _options.clear();
-                                setState(() {});
-                              },
-                            ),
+                              setNameCurrentPos();
+                              _focusNode.unfocus();
+                              _options.clear();
+                              setState(() {});
+                            },
                           );
                         },
                       );
@@ -276,7 +258,6 @@ class _OpenStreetMapSearchAndPickState
                   children: [
                     FloatingActionButton(
                       heroTag: 'btn3',
-                      backgroundColor: widget.buttonColor,
                       onPressed: () async {
                         LatLng result =
                             await widget.onCurrentLocationTap?.call(context) ??
@@ -321,7 +302,6 @@ class _OpenStreetMapSearchAndPickState
                             onPressed: () async {
                               widget.onPicked?.call(context, pickData);
                             },
-                            backgroundcolor: widget.buttonColor,
                           ),
                         ],
                       ),

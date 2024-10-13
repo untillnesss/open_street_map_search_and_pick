@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
       ),
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
@@ -68,7 +68,6 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: OpenStreetMapSearchAndPick(
         center: LatLng(23, 89),
-        buttonColor: Colors.blue,
         buttonText: 'Set Current Location',
         onCurrentLocationTap: (context) async {
           return LatLng(-7.2363011, 112.7509539);
