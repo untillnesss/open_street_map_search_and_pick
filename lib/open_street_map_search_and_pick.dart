@@ -11,6 +11,7 @@ import 'package:open_street_map_search_and_pick/widgets/map_bottom.dart';
 import 'package:open_street_map_search_and_pick/widgets/map_pin.dart';
 import 'package:open_street_map_search_and_pick/widgets/map_search.dart';
 import 'package:open_street_map_search_and_pick/widgets/map_view.dart';
+export 'models/picked_data.dart';
 
 class OpenStreetMapSearchAndPick extends StatefulWidget {
   final LatLng center;
