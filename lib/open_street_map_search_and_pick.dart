@@ -2,30 +2,30 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map/plugin_api.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
-import 'package:open_street_map_search_and_pick/widgets/wide_button.dart';
+import 'package:open_street_map_search_and_pick/models/picked_data.dart';
+import 'package:open_street_map_search_and_pick/widgets/map_bottom.dart';
+import 'package:open_street_map_search_and_pick/widgets/map_pin.dart';
+import 'package:open_street_map_search_and_pick/widgets/map_search.dart';
+import 'package:open_street_map_search_and_pick/widgets/map_view.dart';
+export 'models/picked_data.dart';
 
 class OpenStreetMapSearchAndPick extends StatefulWidget {
   final LatLng center;
   // final void Function(PickedData pickedData) onPicked;
-  final Color buttonColor;
   final String buttonText;
   final Future<LatLng> Function(BuildContext context)? onCurrentLocationTap;
-  final ThemeData? textFieldThemeData, listTileThemeData;
   final Function(BuildContext, Future<PickedData> Function())? onPicked;
 
   const OpenStreetMapSearchAndPick({
     Key? key,
     required this.center,
     required this.onPicked,
-    this.buttonColor = Colors.blue,
     this.buttonText = 'Set Current Location',
     this.onCurrentLocationTap,
-    this.textFieldThemeData,
-    this.listTileThemeData,
   }) : super(key: key);
 
   @override
@@ -35,18 +35,16 @@ class OpenStreetMapSearchAndPick extends StatefulWidget {
 
 class _OpenStreetMapSearchAndPickState
     extends State<OpenStreetMapSearchAndPick> {
-  MapController _mapController = MapController();
-  final TextEditingController _searchController = TextEditingController();
+  final MapController mapController = MapController();
+  final TextEditingController searchController = TextEditingController();
+
   String focusingLocation = '';
-  final FocusNode _focusNode = FocusNode();
-  List<OSMdata> _options = <OSMdata>[];
-  Timer? _debounce;
-  var client = http.Client();
   bool isLoadingAddress = true;
+  http.Client client = http.Client();
 
   void setNameCurrentPos() async {
-    double latitude = _mapController.center.latitude;
-    double longitude = _mapController.center.longitude;
+    double latitude = mapController.camera.center.latitude;
+    double longitude = mapController.camera.center.longitude;
     if (kDebugMode) {
       print(latitude);
     }
@@ -56,12 +54,12 @@ class _OpenStreetMapSearchAndPickState
     String url =
         'https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&zoom=18&addressdetails=1';
 
-    var response = await client.post(Uri.parse(url));
+    var response = await client.get(Uri.parse(url));
     var decodedResponse =
         jsonDecode(utf8.decode(response.bodyBytes)) as Map<dynamic, dynamic>;
 
-    _searchController.text =
-        decodedResponse['display_name'] ?? "MOVE TO CURRENT POSITION";
+    // searchController.text =
+    //     decodedResponse['display_name'] ?? "MOVE TO CURRENT POSITION";
     focusingLocation =
         decodedResponse['display_name'] ?? "MOVE TO CURRENT POSITION";
     setState(() {});
@@ -82,11 +80,11 @@ class _OpenStreetMapSearchAndPickState
     String url =
         'https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&zoom=18&addressdetails=1';
 
-    var response = await client.post(Uri.parse(url));
+    var response = await client.get(Uri.parse(url));
     var decodedResponse =
         jsonDecode(utf8.decode(response.bodyBytes)) as Map<dynamic, dynamic>;
 
-    // _searchController.text =
+    // searchController.text =
     //     decodedResponse['display_name'] ?? "MOVE TO CURRENT POSITION";
     focusingLocation =
         decodedResponse['display_name'] ?? "MOVE TO CURRENT POSITION";
@@ -97,25 +95,23 @@ class _OpenStreetMapSearchAndPickState
 
   @override
   void initState() {
-    _mapController = MapController();
-
-    WidgetsBinding.instance!.addPostFrameCallback((time) {
+    WidgetsBinding.instance.addPostFrameCallback((time) {
       setNameCurrentPosAtInit();
     });
 
-    _mapController.mapEventStream.listen((event) async {
+    mapController.mapEventStream.listen((event) async {
       if (event is MapEventMoveEnd) {
         isLoadingAddress = true;
         setState(() {});
         var client = http.Client();
         String url =
-            'https://nominatim.openstreetmap.org/reverse?format=json&lat=${event.center.latitude}&lon=${event.center.longitude}&zoom=18&addressdetails=1';
+            'https://nominatim.openstreetmap.org/reverse?format=json&lat=${event.camera.center.latitude}&lon=${event.camera.center.longitude}&zoom=18&addressdetails=1';
 
-        var response = await client.post(Uri.parse(url));
+        var response = await client.get(Uri.parse(url));
         var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes))
             as Map<dynamic, dynamic>;
-
-        // _searchController.text = decodedResponse['display_name'] ?? '';
+        debugPrint(decodedResponse.toString());
+        // searchController.text = decodedResponse['display_name'] ?? '';
         focusingLocation = decodedResponse['display_name'] ?? '';
         isLoadingAddress = false;
         setState(() {});
@@ -127,256 +123,70 @@ class _OpenStreetMapSearchAndPickState
 
   @override
   void dispose() {
-    _mapController.dispose();
+    mapController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    OutlineInputBorder inputBorder = OutlineInputBorder(
-      borderSide: BorderSide(color: widget.buttonColor),
-    );
-    OutlineInputBorder inputFocusBorder = OutlineInputBorder(
-      borderSide: BorderSide(color: widget.buttonColor, width: 3.0),
-    );
-
     // String? _autocompleteSelection;
-    return SafeArea(
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: FlutterMap(
-              options: MapOptions(
-                center: LatLng(widget.center.latitude, widget.center.longitude),
-                zoom: 15.0,
-                maxZoom: 18,
-                minZoom: 6,
-              ),
-              mapController: _mapController,
-              layers: [
-                TileLayerOptions(
-                  urlTemplate:
-                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  subdomains: ['a', 'b', 'c'],
-                  userAgentPackageName: 'dev.fleaflet.flutter_map.example',
-                ),
-              ],
-            ),
-          ),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: Center(
-                child: Icon(Icons.location_pin,
-                    size: 50, color: widget.buttonColor),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              margin: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(5),
-              ),
-              child: Column(
-                children: [
-                  Theme(
-                    data: widget.textFieldThemeData ?? ThemeData(),
-                    child: TextFormField(
-                      controller: _searchController,
-                      focusNode: _focusNode,
-                      decoration: InputDecoration(
-                        hintText: 'Search Location',
-                        border: inputBorder,
-                        focusedBorder: inputFocusBorder,
-                      ),
-                      onChanged: (String value) {
-                        if (_debounce?.isActive ?? false) _debounce?.cancel();
 
-                        _debounce =
-                            Timer(const Duration(milliseconds: 2000), () async {
-                          if (kDebugMode) {
-                            print(value);
-                          }
-                          var client = http.Client();
-                          try {
-                            String url =
-                                'https://nominatim.openstreetmap.org/search?q=$value&format=json&polygon_geojson=1&addressdetails=1';
-                            if (kDebugMode) {
-                              print(url);
-                            }
-                            var response = await client.post(Uri.parse(url));
-                            var decodedResponse =
-                                jsonDecode(utf8.decode(response.bodyBytes))
-                                    as List<dynamic>;
-                            if (kDebugMode) {
-                              print(decodedResponse);
-                            }
-                            _options = decodedResponse
-                                .map((e) => OSMdata(
-                                    displayname: e['display_name'],
-                                    lat: double.parse(e['lat']),
-                                    lon: double.parse(e['lon'])))
-                                .toList();
-                            setState(() {});
-                          } finally {
-                            client.close();
-                          }
-
-                          setState(() {});
-                        });
-                      },
-                    ),
-                  ),
-                  StatefulBuilder(
-                    builder: (context, setState) {
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _options.length > 5 ? 5 : _options.length,
-                        itemBuilder: (context, index) {
-                          return Theme(
-                            data: widget.listTileThemeData ?? ThemeData(),
-                            child: ListTile(
-                              title: Text(_options[index].displayname),
-                              subtitle: Text(
-                                  '${_options[index].lat},${_options[index].lon}'),
-                              onTap: () {
-                                _mapController.move(
-                                    LatLng(_options[index].lat,
-                                        _options[index].lon),
-                                    15.0);
-
-                                setNameCurrentPos();
-                                _focusNode.unfocus();
-                                _options.clear();
-                                setState(() {});
-                              },
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ],
-              ),
+    return GestureDetector(
+      onTap: () {
+        primaryFocus?.unfocus();
+      },
+      child: SafeArea(
+        child: Stack(
+          children: [
+            MapView(
+              widget: widget,
+              mapController: mapController,
             ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    FloatingActionButton(
-                      heroTag: 'btn3',
-                      backgroundColor: widget.buttonColor,
-                      onPressed: () async {
-                        LatLng result =
-                            await widget.onCurrentLocationTap?.call(context) ??
-                                widget.center;
-
-                        _mapController.move(
-                          result,
-                          _mapController.zoom,
-                        );
-                        setNameCurrentPos();
-                      },
-                      child: const Icon(Icons.my_location),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      color: Colors.white,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          IgnorePointer(
-                            child:
-                                StatefulBuilder(builder: (context, setState) {
-                              return Text(
-                                focusingLocation,
-                                textAlign: TextAlign.left,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              );
-                            }),
-                          ),
-                          const SizedBox(height: 16),
-                          Visibility(
-                            visible: isLoadingAddress,
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              child: const LinearProgressIndicator(),
-                            ),
-                          ),
-                          WideButton(
-                            widget.buttonText,
-                            onPressed: () async {
-                              widget.onPicked?.call(context, pickData);
-                            },
-                            backgroundcolor: widget.buttonColor,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            MapPin(),
+            MapSearch(
+              mapController: this.mapController,
+              searchController: this.searchController,
+              onTapList: () {
+                this.setNameCurrentPos();
+              },
             ),
-          )
-        ],
+            KeyboardVisibilityBuilder(
+              builder: (p0, isKeyboardVisible) {
+                if (isKeyboardVisible) {
+                  return Positioned.fill(child: SizedBox.shrink());
+                }
+                return MapBottom(
+                  mapController: this.mapController,
+                  buttonText: this.widget.buttonText,
+                  center: this.widget.center,
+                  focusingLocation: this.focusingLocation,
+                  isLoadingAddress: this.isLoadingAddress,
+                  onTapFab: () {
+                    this.setNameCurrentPos();
+                  },
+                  onCurrentLocationTap: this.widget.onCurrentLocationTap,
+                  onPicked: this.widget.onPicked,
+                  pickData: this.pickData,
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Future<PickedData> pickData() async {
-    LatLng center =
-        LatLng(_mapController.center.latitude, _mapController.center.longitude);
+    LatLng center = LatLng(mapController.camera.center.latitude,
+        mapController.camera.center.longitude);
     var client = http.Client();
     String url =
-        'https://nominatim.openstreetmap.org/reverse?format=json&lat=${_mapController.center.latitude}&lon=${_mapController.center.longitude}&zoom=18&addressdetails=1';
+        'https://nominatim.openstreetmap.org/reverse?format=json&lat=${mapController.camera.center.latitude}&lon=${mapController.camera.center.longitude}&zoom=18&addressdetails=1';
 
-    var response = await client.post(Uri.parse(url));
+    var response = await client.get(Uri.parse(url));
     var decodedResponse =
         jsonDecode(utf8.decode(response.bodyBytes)) as Map<dynamic, dynamic>;
     String displayName = decodedResponse['display_name'];
     return PickedData(center, displayName);
   }
-}
-
-class OSMdata {
-  final String displayname;
-  final double lat;
-  final double lon;
-  OSMdata({required this.displayname, required this.lat, required this.lon});
-  @override
-  String toString() {
-    return '$displayname, $lat, $lon';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (other.runtimeType != runtimeType) {
-      return false;
-    }
-    return other is OSMdata && other.displayname == displayname;
-  }
-
-  @override
-  int get hashCode => Object.hash(displayname, lat, lon);
-}
-
-class PickedData {
-  final LatLng latLong;
-  final String address;
-
-  PickedData(this.latLong, this.address);
 }
